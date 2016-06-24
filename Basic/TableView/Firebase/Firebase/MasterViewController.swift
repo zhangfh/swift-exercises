@@ -28,10 +28,6 @@ class MasterViewController: UITableViewController {
     ** ** ** ** ** ** ** ** ** ** ** **/
     var objects = [AnyObject]()
 
-    override func awakeFromNib() {
-        super.awakeFromNib()
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -43,28 +39,12 @@ class MasterViewController: UITableViewController {
         getTopStories()
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-
     func insertNewObject(sender: AnyObject) {
         objects.insert(NSDate(), atIndex: 0)
         let indexPath = NSIndexPath(forRow: 0, inSection: 0)
         self.tableView.insertRowsAtIndexPaths([indexPath], withRowAnimation: .Automatic)
     }
 
-    // MARK: - Segues
-/*
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        if segue.identifier == "showDetail" {
-            if let indexPath = self.tableView.indexPathForSelectedRow() {
-                let object = objects[indexPath.row] as! NSDate
-            (segue.destinationViewController as! DetailViewController).detailItem = object
-            }
-        }
-    }
-*/
     // MARK: - Table View
 
     override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
@@ -74,15 +54,7 @@ class MasterViewController: UITableViewController {
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return objects.count
     }
-/*
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath) as! UITableViewCell
 
-        let object = objects[indexPath.row] as! NSDate
-        cell.textLabel!.text = object.description
-        return cell
-    }
-*/
     override func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath: NSIndexPath) -> Bool {
         // Return false if you do not want the specified item to be editable.
         return true
@@ -107,14 +79,14 @@ extension MasterViewController{
         //A. Construct a URL
         let url = NSURL(string: BASE_URL + "/v0/topstories.json")
         //B. Construct a URL Request
-        var urlRequest = NSMutableURLRequest(URL: url!)
+        let urlRequest = NSMutableURLRequest(URL: url!)
             urlRequest.HTTPMethod = "GET"
         //C. Open a URLConnection and download the data
         NSURLConnection.sendAsynchronousRequest(urlRequest, queue: self.operationQueue, completionHandler: {[unowned self](response, responseData, error) -> Void in
             //D. Create a data object if there's responseData
             if let data = responseData{
                 //E. Convert the Raw data into a JSON string
-                let objects = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions(0), error: nil) as? NSArray
+                let objects = (try? NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions(rawValue: 0))) as? NSArray
                 //F. Continue doing more processing
                 self.downloadStoriesInformation(objects!)
             }
@@ -125,7 +97,7 @@ extension MasterViewController{
     private func downloadStoriesInformation(storyIDs: NSArray) -> Void {
         let count = 2 //storyIDs.count
         
-        for (index, storyID) in enumerate(storyIDs){
+        for (index, storyID) in storyIDs.enumerate(){
             //A. Item detail story
             let storyURL = BASE_URL + "/v0/item/" + storyID.stringValue + ".json"
             //B. Craft a URL string
@@ -139,10 +111,10 @@ extension MasterViewController{
                 //E. If data exists, process it
                 if let data = resData {
                     if err != nil{
-                        println("error", err)
+                        print("error", err)
                     }
                     //F. Convert data into JSON
-                    let json = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions(0), error: nil) as? NSDictionary
+                    let json = (try? NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions(rawValue: 0))) as? NSDictionary
                     //G. Create an Item Object
                     let item = Item(dictionary: json as! [String: AnyObject])
                     //H. Store the Item object
@@ -164,23 +136,23 @@ extension MasterViewController{
     }
     
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath) as! UITableViewCell
+        
+        let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath)
 
-        let object = self.objects[indexPath.row] as! NSNumber
-        //println("tableView", object, indexPath.row )
+        let object = self.objects[indexPath.row] as! NSDate
+        print("tableView", object, indexPath.row )
 
         let item = self.stories[object] as? Item
         if item != nil{
             cell.textLabel!.text = item!.title
         }
-        
         return cell
     }
 
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
         if segue.identifier == "showDetail" {
-            if let indexPath = self.tableView.indexPathForSelectedRow() {
-                let object = objects[indexPath.row] as! NSNumber
+            if let indexPath = self.tableView.indexPathForSelectedRow {
+                let object = objects[indexPath.row] as! NSDate
                 let item = self.stories[object] as? Item
 
                 (segue.destinationViewController as! DetailViewController).detailItem = item
